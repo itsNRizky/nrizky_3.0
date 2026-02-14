@@ -1,0 +1,384 @@
+---
+title: "MDX Syntax Reference Guide"
+description: "A comprehensive guide showing all MDX formatting options available for writing articles."
+date: "2024-01-20"
+tag: "Reference"
+thumbnail: "/content/images/mdx-guide/hero.jpg"
+featured: false
+---
+
+This is a **dummy article** demonstrating all MDX syntax you can use. Keep this file as a reference when writing new articles.
+
+---
+
+## Headings
+
+# Heading 1 (H1)
+
+## Heading 2 (H2)
+
+### Heading 3 (H3)
+
+#### Heading 4 (H4)
+
+---
+
+## Text Formatting
+
+This is a normal paragraph. You can write multiple sentences here. Keep paragraphs focused on one idea.
+
+This is **bold text** for emphasis.
+
+This is *italic text* for subtle emphasis.
+
+This is ***bold and italic*** combined.
+
+This is ~~strikethrough~~ for deleted content.
+
+This is `inline code` for variables, functions, or short code snippets.
+
+---
+
+## Links
+
+[External link to Google](https://google.com)
+
+[Internal link to another article](/writings/another-article)
+
+[Link with title](https://github.com "Visit GitHub")
+
+---
+
+## Lists
+
+### Unordered List (Bullet Points)
+
+- First item
+- Second item
+- Third item with longer text that might wrap to the next line
+- Fourth item
+  - Nested item 1
+  - Nested item 2
+    - Deeply nested item
+
+### Ordered List (Numbered)
+
+1. First step
+2. Second step
+3. Third step
+   1. Sub-step A
+   2. Sub-step B
+4. Fourth step
+
+### Task List
+
+- [x] Completed task
+- [x] Another completed task
+- [ ] Incomplete task
+- [ ] Another incomplete task
+
+---
+
+## Blockquotes
+
+> This is a simple blockquote. Use it for quotes or to highlight important information.
+
+> **Pro tip:** You can add bold text inside blockquotes for emphasis.
+
+> This is a multi-line blockquote.
+>
+> It can span multiple paragraphs.
+>
+> — Author Name
+
+---
+
+## Code Blocks
+
+### Inline Code
+
+Use the `useState` hook to manage state. Run `npm install` to install dependencies.
+
+### JavaScript / TypeScript
+
+```javascript
+// JavaScript example
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+  return name.toUpperCase();
+}
+
+greet('World');
+```
+
+```typescript
+// TypeScript example
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+const getUser = async (id: number): Promise<User> => {
+  const response = await fetch(`/api/users/${id}`);
+  return response.json();
+};
+```
+
+### React / JSX / TSX
+
+```tsx
+// React component example
+import { useState } from 'react';
+
+interface ButtonProps {
+  label: string;
+  onClick: () => void;
+}
+
+export default function Button({ label, onClick }: ButtonProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={isHovered ? 'btn-hover' : 'btn'}
+    >
+      {label}
+    </button>
+  );
+}
+```
+
+### CSS
+
+```css
+/* CSS example */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background-color: #fafafa;
+  border-radius: 12px;
+}
+
+.container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+```
+
+### HTML
+
+```html
+<!-- HTML example -->
+<div class="card">
+  <img src="/image.jpg" alt="Card image" />
+  <div class="card-content">
+    <h2>Card Title</h2>
+    <p>Card description goes here.</p>
+  </div>
+</div>
+```
+
+### JSON
+
+```json
+{
+  "name": "my-portfolio",
+  "version": "1.0.0",
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "gray-matter": "^4.0.3"
+  }
+}
+```
+
+### Terminal / Bash Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Deploy to server
+rsync -avz ./dist/ user@server:/var/www/app/
+```
+
+```bash
+# Multiple commands example
+cd /var/www/myapp
+git pull origin main
+npm install
+npm run build
+pm2 restart app
+```
+
+### SQL
+
+```sql
+-- Create table
+CREATE TABLE articles (
+  id SERIAL PRIMARY KEY,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Query example
+SELECT * FROM articles
+WHERE published = true
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+### Diff (Show Changes)
+
+```diff
+- const oldValue = 'before';
++ const newValue = 'after';
+
+function example() {
+-   return oldFunction();
++   return newFunction();
+}
+```
+
+---
+
+## Images
+
+### Basic Image
+
+![Alt text for image](/content/images/mdx-guide/example.jpg)
+
+### Image with Caption
+
+![Dashboard before optimization](/content/images/mdx-guide/before.png)
+*Figure 1: The dashboard before optimization — 4.2s load time*
+
+### GIF
+
+![Demo animation](/content/images/mdx-guide/demo.gif)
+
+---
+
+## Tables
+
+### Simple Table
+
+| Name | Role | Experience |
+|------|------|------------|
+| John | Frontend | 3 years |
+| Jane | Backend | 5 years |
+| Bob | Fullstack | 4 years |
+
+### Aligned Table
+
+| Metric | Before | After | Change |
+|:-------|-------:|------:|-------:|
+| Load Time | 4.2s | 2.5s | -40% |
+| Bundle Size | 2.1MB | 890KB | -58% |
+| LCP | 3.8s | 2.1s | -45% |
+
+(`:----` left align, `----:` right align, `:---:` center align)
+
+---
+
+## Horizontal Rule
+
+Use three dashes to create a divider:
+
+---
+
+Content continues after the divider.
+
+---
+
+## Escaping Characters
+
+Use backslash to escape special characters:
+
+\*This is not italic\*
+
+\`This is not code\`
+
+\# This is not a heading
+
+---
+
+## Line Breaks
+
+Single line break (same paragraph):
+Use two spaces at end of line  
+to create a line break.
+
+Or use `<br />` for explicit break:<br />
+Next line here.
+
+---
+
+## Combining Elements
+
+> **Note:** You can combine multiple elements:
+>
+> - Use `code` inside lists
+> - Add **bold** or *italic* text
+> - Include [links](https://example.com)
+
+### Complex Example
+
+Here's a real-world example combining multiple elements:
+
+1. First, install the package:
+   ```bash
+   npm install gray-matter
+   ```
+
+2. Then, create the helper function:
+   ```typescript
+   import matter from 'gray-matter';
+
+   export function parseArticle(content: string) {
+     const { data, content: body } = matter(content);
+     return { meta: data, body };
+   }
+   ```
+
+3. Finally, use it in your component:
+   ```tsx
+   const article = parseArticle(fileContent);
+   console.log(article.meta.title);
+   ```
+
+> **Result:** You now have a working MDX parser!
+
+---
+
+## Summary
+
+This file covers:
+
+- ✅ Headings (H1-H4)
+- ✅ Text formatting (bold, italic, strikethrough, inline code)
+- ✅ Links (external, internal)
+- ✅ Lists (bullet, numbered, task)
+- ✅ Blockquotes
+- ✅ Code blocks (JS, TS, TSX, CSS, HTML, JSON, Bash, SQL, Diff)
+- ✅ Images and GIFs
+- ✅ Tables
+- ✅ Horizontal rules
+- ✅ Escaping characters
+- ✅ Line breaks
+- ✅ Combining elements
+
+Copy elements from this file when writing your articles!
