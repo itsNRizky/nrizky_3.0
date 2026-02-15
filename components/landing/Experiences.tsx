@@ -16,17 +16,12 @@ const experiences: Experience[] = [
     details: [
       "Built buyer-facing purchase and reward flows integrated with Stripe and PayPay, supporting 2,400+ monthly transactions",
       "Improved React table rendering performance by 190% (20 FPS → 58 FPS on iOS) using hybrid virtualization (TanStack Virtual) and optimized MobX state subscriptions",
-      "Optimized end-to-end search performance by 84%, reducing query time from 12s to 1.89s.",
+      "Optimized end-to-end search performance by 85%, reducing query time from 17.77s to 988ms.",
     ],
     caseStudies: [
       {
-        title: "How I optimized React rendering",
-        slug: "sera-react-table-virtualization",
-      },
-      {
-        title:
-          "How I improve search speed by 84%, reducing query time from 12s to 1.89s",
-        slug: "sera-search-query-optimization",
+        title: "How I Cut Search Latency from 17.77s to 988ms in Production",
+        slug: "search-latency-optimizations",
       },
     ],
   },

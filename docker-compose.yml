@@ -1,0 +1,18 @@
+services:
+  nextjs-app:
+    build: .
+    container_name: nextjs-app
+    restart: always
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./data:/app/data
+
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true

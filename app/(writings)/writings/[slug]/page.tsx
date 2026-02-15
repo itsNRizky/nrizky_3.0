@@ -1,12 +1,78 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getArticle } from "@/lib/articles";
+import { getArticle, getAllSlugs } from "@/lib/articles";
 import { rehypePrettyCode, rehypePrettyCodeOptions, remarkGfm } from "@/lib/mdx";
 import ViewCounter from "@/components/writings/ViewCounter";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateStaticParams() {
+  const slugs = getAllSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = getArticle(slug);
+
+  if (!article) {
+    return {
+      title: "Article Not Found",
+    };
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nrizky.com";
+  const articleUrl = `${siteUrl}/writings/${slug}`;
+
+  // Determine OG image - use thumbnail if it's an image, otherwise use default
+  const ogImage =
+    article.thumbnail &&
+    !article.thumbnail.endsWith(".mp4") &&
+    !article.thumbnail.endsWith(".webm") &&
+    !article.thumbnail.endsWith(".mov") &&
+    !article.thumbnail.startsWith("linear-gradient")
+      ? article.thumbnail
+      : "/og-default.png";
+
+  return {
+    title: article.title,
+    description: article.description,
+    keywords: article.tags,
+    authors: [{ name: "NRizky" }],
+    openGraph: {
+      type: "article",
+      url: articleUrl,
+      title: article.title,
+      description: article.description,
+      publishedTime: article.date,
+      authors: ["NRizky"],
+      tags: article.tags,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.description,
+      images: [ogImage],
+      creator: "@nrizky",
+    },
+    alternates: {
+      canonical: articleUrl,
+    },
+  };
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {

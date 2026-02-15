@@ -1,7 +1,24 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import WritingCard from "@/components/writings/WritingCard";
 import TagFilter from "@/components/writings/TagFilter";
 import { getAllArticles, getAllTags } from "@/lib/articles";
+
+export const metadata: Metadata = {
+  title: "Writings",
+  description:
+    "Thoughts on frontend development, performance optimization, and career growth in software engineering.",
+  openGraph: {
+    title: "Writings | NRizky",
+    description:
+      "Thoughts on frontend development, performance optimization, and career growth in software engineering.",
+  },
+  twitter: {
+    title: "Writings | NRizky",
+    description:
+      "Thoughts on frontend development, performance optimization, and career growth in software engineering.",
+  },
+};
 
 interface WritingsPageProps {
   searchParams: Promise<{ tag?: string }>;
