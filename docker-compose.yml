@@ -1,14 +1,15 @@
 services:
-  nextjs-app:
+  nrizky:
     build: .
-    container_name: nextjs-app
+    container_name: nrizky
     restart: always
 
-    ports:
-      - "3000:3000"
-
-    volumes:
-      - ./data:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nrizky.rule=Host(`nrizky.com`)"
+      - "traefik.http.routers.nrizky.entrypoints=websecure"
+      - "traefik.http.routers.nrizky.tls.certresolver=le"
+      - "traefik.http.services.nrizky.loadbalancer.server.port=3000"
 
     networks:
       - traefik-proxy
