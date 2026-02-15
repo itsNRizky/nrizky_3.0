@@ -7,7 +7,7 @@ const javanese = Noto_Sans_Javanese({
 
 const MobileHero = () => {
   return (
-    <section className="bg-background sticky top-[calc(-15vh)] flex min-h-[calc(80vh-6rem)] flex-col justify-center md:relative md:top-0 md:hidden">
+    <section className="bg-background flex min-h-[calc(80vh-6rem)] flex-col justify-center md:hidden">
       {/* Logo */}
       <div className="mb-5">
         <h1
