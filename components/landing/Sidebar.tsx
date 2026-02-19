@@ -25,10 +25,10 @@ const Sidebar = () => {
 
           {/* Title & Description */}
           <h2 className="text-text-primary text-[15px] font-semibold">
-            Software Engineer (FE)
+            Software Engineer
           </h2>
           <p className="text-text-subtle text-[14px] leading-normal">
-            I build reliable, high-performance frontend systems.
+            I build reliable, user-oriented systems.
           </p>
 
           {/* Navigation */}

@@ -19,12 +19,12 @@ const MobileHero = () => {
 
       {/* Role */}
       <h2 className="text-text-primary mb-3 text-[17px] font-semibold">
-        Software Engineer (FE)
+        Software Engineer
       </h2>
 
       {/* Description */}
       <p className="text-text-subtle mb-8 text-[15px] leading-relaxed">
-        I build reliable, high-performance frontend systems.
+        I build reliable, user-oriented systems.
       </p>
 
       {/* Social Links */}
