@@ -1,57 +1,37 @@
-import fs from "fs";
-import path from "path";
+import { db } from "@/lib/db";
+import { pageViews } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
-const viewsFilePath = path.join(process.cwd(), "data/views.json");
-
-type ViewsData = Record<string, number>;
-
-/**
- * Read views data from JSON file
- */
-function readViewsData(): ViewsData {
-  if (!fs.existsSync(viewsFilePath)) {
-    // Create the file with empty object if it doesn't exist
-    fs.writeFileSync(viewsFilePath, JSON.stringify({}, null, 2));
-    return {};
-  }
-
-  try {
-    const fileContents = fs.readFileSync(viewsFilePath, "utf8");
-    return JSON.parse(fileContents);
-  } catch {
-    return {};
-  }
+interface RecordViewParams {
+  path: string;
+  refParam: string | null;
+  referrerUrl: string | null;
+  userAgent: string | null;
+  ipHash: string | null;
 }
 
-/**
- * Write views data to JSON file
- */
-function writeViewsData(data: ViewsData): void {
-  fs.writeFileSync(viewsFilePath, JSON.stringify(data, null, 2));
+export async function recordView(params: RecordViewParams): Promise<number> {
+  await db.insert(pageViews).values({
+    path: params.path,
+    refParam: params.refParam,
+    referrerUrl: params.referrerUrl,
+    userAgent: params.userAgent,
+    ipHash: params.ipHash,
+  });
+
+  const result = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
+    .from(pageViews)
+    .where(eq(pageViews.path, params.path));
+
+  return result[0].count;
 }
 
-/**
- * Get view count for a specific article
- */
-export function getViewCount(slug: string): number {
-  const views = readViewsData();
-  return views[slug] || 0;
-}
+export async function getViewCount(path: string): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`cast(count(*) as int)` })
+    .from(pageViews)
+    .where(eq(pageViews.path, path));
 
-/**
- * Increment view count for an article and return the new count
- */
-export function incrementView(slug: string): number {
-  const views = readViewsData();
-  const newCount = (views[slug] || 0) + 1;
-  views[slug] = newCount;
-  writeViewsData(views);
-  return newCount;
-}
-
-/**
- * Get all view counts
- */
-export function getAllViews(): ViewsData {
-  return readViewsData();
+  return result[0].count;
 }

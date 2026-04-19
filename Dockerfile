@@ -34,6 +34,12 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copy public folder
 COPY --from=builder /app/public ./public
 
+# Copy Drizzle migration files (needed for auto-migration at startup)
+COPY --from=builder /app/drizzle ./drizzle
+
+# Copy MDX content (needed for article rendering)
+COPY --from=builder /app/content ./content
+
 # Expose Next.js port
 EXPOSE 3000
 

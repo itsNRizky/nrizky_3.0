@@ -121,7 +121,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           <span>·</span>
           <span>{article.readTime}</span>
           <span>·</span>
-          <ViewCounter slug={slug} />
+          <ViewCounter path={`/writings/${slug}`} />
         </div>
       </header>
 
