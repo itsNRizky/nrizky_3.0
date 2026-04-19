@@ -3,10 +3,12 @@ import MobileHero from "@/components/landing/MobileHero";
 import About from "@/components/landing/About";
 import Experiences from "@/components/landing/Experiences";
 import CaseStudies from "@/components/landing/CaseStudies";
+import PageTracker from "@/components/PageTracker";
 
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-[800px] flex-col px-4 py-8 md:px-16 md:py-12">
+      <PageTracker />
       <div className="flex-1">
         <Header />
         <MobileHero />

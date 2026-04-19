@@ -14,7 +14,7 @@ Search Array is a trading-card discovery web application that allows users to se
 
 It is an existing production system built with Laravel, ReactJS, and PostgreSQL. Because the search logic is complex and the dataset continues to grow, the platform relies on high-performance backend queries and effective caching to maintain a smooth user experience.
 
-I joined the project while it was already running in production, and one of the areas I contributed to was improving the performance of its core card search feature.
+I joined the project while it was already running in production. One of my first priorities was improving the performance of its core card search feature.
 
 Since the search endpoint supports combination-based queries, latency has a direct impact on usability—making performance optimization a key focus of this work.
 
@@ -61,7 +61,7 @@ This helped narrow the bottlenecks down to a few main areas.
 
 ### 1. N+1 Queries in Relationship Loading
 
-Some parts of the endpoint were loading related models lazily while iterating through results, which caused many repeated database queries.
+This turned out to be the single biggest win. Some parts of the endpoint were loading related models lazily while iterating through results—causing **100+ separate database queries** where only 3–5 were needed.
 
 **Before (N+1 Problem):**
 
@@ -95,12 +95,11 @@ $lists = CardList::with('master.cardCategory')
 
 ```
 
-Accessing relationships inside a loop triggers lazy-loaded queries per item. Eager loading fetches them in bulk, eliminating repeated database round-trips.
-This single change reduced database round-trips from 100+ queries (100 'row' of data iterated) to ~3-5 queries per search request.
+Accessing relationships inside a loop triggers lazy-loaded queries per item. Eager loading fetches them in bulk, eliminating repeated database round-trips. This single change reduced database round-trips from **100+ queries** (one per row of data) down to **~3–5 queries** per search request.
 
-### 2. Extra Work in Matching and Iteration
+### 2. Unnecessary Iteration Over Empty Positions
 
-There were also sections of logic iterating through fixed ranges (1–100) even when only a subset was needed.
+The matching logic was iterating through a fixed range of 1–100 positions even when most of them had no data. In categories with sparse data (say, 20 actual entries out of 100 slots), this meant ~80% of the loop was doing nothing but checking `isset()` against empty positions.
 
 **Before:**
 
@@ -129,6 +128,8 @@ foreach ($sortNumbers as $sortNo) {
 }
 
 ```
+
+On its own this wasn't the largest bottleneck, but combined with the other changes it contributed to the overall reduction—especially in the data processing phases where timing logs showed time being spent on iteration-heavy logic.
 
 ### 3. Pre-fetching Related Data in Batches
 
@@ -183,8 +184,7 @@ $query = CardList::select(
 
 ### Redis Caching (With Safe Invalidation)
 
-After the query improvements, caching provided another large win.
-Because search results are often repeated, I implemented Redis caching with different TTLs depending on complexity:
+After the query improvements, caching provided another large win. Because search results are often repeated, I implemented Redis caching with different TTLs depending on complexity—single-card searches get a 24-hour cache since those results are more stable and most commonly repeated, while multi-card combination searches use a shorter 3-hour TTL because the result space is larger and less likely to be cached effectively for long.
 
 ```php
 // Dynamic cache TTL based on search complexity
@@ -246,11 +246,9 @@ This brought the endpoint into a much more usable range.
 
 This was one of my first experiences working on performance issues in a real production system, and a few lessons stood out:
 
-- **N+1 queries can become a major bottleneck** in complex endpoints - eager loading with `with()` is essential
-- **Small query-shaping changes can have outsized impact** - selecting only needed columns and filtering early reduces memory and processing time
-- **Caching is powerful, but only when paired with proper invalidation** - the Observer pattern ensures data consistency
-- **Working inside an existing system requires incremental improvements** rather than rewrites
-- **Measurement before optimization** - adding timing logs helped identify exactly where time was being spent
+- **Measurement before optimization** — adding timing logs across processing phases told me exactly where the seconds were going. Without that, I would have been guessing.
+- **N+1 queries can silently destroy performance** — the endpoint looked fine in code review, but 100+ lazy-loaded queries per request were invisible until I profiled it. Eager loading with `with()` turned out to be the single highest-impact fix.
+- **Small query-shaping changes compound** — selecting only needed columns, filtering early, and reducing iteration scope each contributed incremental gains that added up.
+- **Caching is powerful, but only as good as its invalidation** — without the Observer pattern flushing stale data on model changes, the cache would have introduced consistency bugs instead of solving performance problems.
 
-This work gave me more confidence working with backend performance, and I'm continuing to learn more about scalability and production monitoring.
-I believe the performance still can be improved, so if you have any suggestions, you can contact me too!
+This work gave me more confidence working with backend performance. I'm continuing to explore production performance patterns, and I'll be writing more about what I learn.

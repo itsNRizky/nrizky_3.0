@@ -1,25 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface ViewCounterProps {
-  slug: string;
+  path: string;
 }
 
-const ViewCounter = ({ slug }: ViewCounterProps) => {
+const ViewCounter = ({ path }: ViewCounterProps) => {
   const [views, setViews] = useState<number | null>(null);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Increment and get count
+    const ref = searchParams.get("ref");
+
     fetch("/api/views", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug }),
+      body: JSON.stringify({ path, ref }),
     })
       .then((res) => res.json())
       .then((data) => setViews(data.count))
       .catch(() => setViews(0));
-  }, [slug]);
+  }, [path, searchParams]);
 
   if (views === null) {
     return <span className="text-text-faded">...</span>;
