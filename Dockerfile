@@ -24,6 +24,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 
 # Copy standalone server
 COPY --from=builder /app/.next/standalone ./
