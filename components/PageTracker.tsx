@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
-const PageTracker = () => {
+const PageTrackerInner = () => {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -19,5 +20,11 @@ const PageTracker = () => {
 
   return null;
 };
+
+const PageTracker = () => (
+  <Suspense fallback={null}>
+    <PageTrackerInner />
+  </Suspense>
+);
 
 export default PageTracker;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -7,7 +8,7 @@ interface ViewCounterProps {
   path: string;
 }
 
-const ViewCounter = ({ path }: ViewCounterProps) => {
+const ViewCounterInner = ({ path }: ViewCounterProps) => {
   const [views, setViews] = useState<number | null>(null);
   const searchParams = useSearchParams();
 
@@ -34,5 +35,11 @@ const ViewCounter = ({ path }: ViewCounterProps) => {
     </span>
   );
 };
+
+const ViewCounter = ({ path }: ViewCounterProps) => (
+  <Suspense fallback={<span className="text-text-faded">...</span>}>
+    <ViewCounterInner path={path} />
+  </Suspense>
+);
 
 export default ViewCounter;
