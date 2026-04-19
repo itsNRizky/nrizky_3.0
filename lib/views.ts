@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { pageViews } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 
@@ -11,7 +11,7 @@ interface RecordViewParams {
 }
 
 export async function recordView(params: RecordViewParams): Promise<number> {
-  await db.insert(pageViews).values({
+  await getDb().insert(pageViews).values({
     path: params.path,
     refParam: params.refParam,
     referrerUrl: params.referrerUrl,
@@ -19,7 +19,7 @@ export async function recordView(params: RecordViewParams): Promise<number> {
     ipHash: params.ipHash,
   });
 
-  const result = await db
+  const result = await getDb()
     .select({ count: sql<number>`cast(count(*) as int)` })
     .from(pageViews)
     .where(eq(pageViews.path, params.path));
@@ -28,7 +28,7 @@ export async function recordView(params: RecordViewParams): Promise<number> {
 }
 
 export async function getViewCount(path: string): Promise<number> {
-  const result = await db
+  const result = await getDb()
     .select({ count: sql<number>`cast(count(*) as int)` })
     .from(pageViews)
     .where(eq(pageViews.path, path));
