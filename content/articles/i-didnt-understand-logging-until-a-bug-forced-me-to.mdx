@@ -1,0 +1,129 @@
+---
+title: "I Didn't Understand Logging Until a Bug Forced Me To"
+description: "A purchase made before a feature existed somehow triggered that feature's reward. Tracing what actually happened took a full day — and sent me down a rabbit hole on how real systems do logging."
+date: "2026-04-23"
+readTime: "9 min read"
+---
+
+A coupon had been attached to a purchase made 330 days earlier.
+
+The client who owns the product caught it on an admin dashboard — a table that shows which user's purchase each new voucher is tied to. They flagged it to our team, and the dates didn't add up. Once we looked closer, they _really_ didn't add up: 140 of those 330 days were before the gacha feature even existed in our codebase.
+
+A purchase from before the feature existed had somehow received the feature's reward.
+
+I took the initial investigation. It ate most of a day — not because the data was hidden, but because the tools I was using weren't built for the question I was asking. That day is what eventually pushed me to build an [Event Log Service](https://labs.nrizky.com/event-log?ref=nr) in my labs. This is the story of both.
+
+## The data didn't make sense
+
+First thing I did was pull the records from the database. I wrote a query joining our voucher-result table (the many-to-many between gacha items and purchases) with the purchase table, pulling creation timestamps, update timestamps, payment channel, and invoice ID into a single view.
+
+Three things stood out immediately.
+
+The purchase was from January. The voucher was attached in December. **330-day gap.**
+
+The gacha feature launched in June. So for 140 of those days, this purchase existed in a world where the feature it supposedly triggered **didn't exist yet**.
+
+The payment metadata was empty. `payment_channel` was `null`. `invoice_id` was `null`. For a purchase that had supposedly been paid through our Japanese payment provider, those fields should have been populated.
+
+I didn't have a theory yet — just a clear sense that something was wrong. A purchase predating the feature it triggered isn't a bug you stumble into through normal code paths. It's either a code path I didn't know existed, or something worse. I needed to see what actually ran, in order.
+
+## Chasing the flow through Grafana
+
+Our application logs go to Grafana, but they aren't structured — no trace IDs, no request IDs, no consistent schema. Each log line is a plain string emitted from somewhere in the codebase. To reconstruct a flow, you filter by whatever identifiers you can guess at, read the log strings, and grep the codebase for those exact strings to figure out which controller emitted them.
+
+My process looked like this:
+
+1. Filter Grafana by the purchase ID. Get a list of log lines.
+2. Filter again by the voucher ID. Cross-reference.
+3. Narrow the time window to the moment the voucher was attached.
+4. Copy each log string.
+5. Grep the codebase for that exact string.
+6. Read the surrounding controller code to understand what that log line actually meant.
+7. Move to the next log line and repeat.
+
+That last loop — log string, grep codebase, read controller, back to Grafana — is the part that ate the day. Logs told me _that_ something happened. They didn't tell me _where_ in the code it happened, or _why_. Every time I wanted context for a log line, I had to go read the controller that emitted it. I was reverse-engineering our own codebase from log strings.
+
+After most of a day of this, I had the trace:
+
+- A webhook had arrived from our payment provider.
+- The webhook handler updated the purchase status to `SUCCESS`.
+- The handler then called the gacha-creation service for that purchase ID.
+- The service ran, found active items for that game group, and generated a voucher.
+
+All of it happened within 64 milliseconds. All of it for a purchase that shouldn't have been eligible.
+
+What I didn't know was _why_ this had happened. I'd traced the sequence, I could point at the webhook handler and say "the bug is somewhere around here," but I couldn't tell you what was actually wrong with the code. I took everything I'd found to my senior.
+
+## The part I didn't know
+
+My senior read through what I had, looked at the webhook controller, and asked the question I hadn't thought to ask:
+
+_"Does this webhook even authenticate the caller?"_
+
+That was the moment the real problem came into focus. I knew webhooks were HTTP endpoints that external services call. I knew we had CSRF protection disabled for them because they aren't user-initiated requests. I hadn't connected those two things — that if CSRF is off and there's no other auth layer, the endpoint is just a public URL that accepts POST requests and does whatever the payload tells it to.
+
+Ours was just a public URL.
+
+No signature verification, no IP filtering, no idempotency check. Anyone who knew the URL could send a crafted payload and trigger the full payment-success flow. That was the part I'd been missing the whole day — not the bug itself, but the entire concept that webhook endpoints need authentication the same way any other state-changing endpoint does.
+
+We went looking for the provider's documentation on webhook signatures. It was a bit of an adventure. The auth model wasn't in the main webhook docs. We eventually found it buried in the FAQ section: the provider doesn't sign webhooks at all. They authenticate by source IP, and they publish a list of ranges you're expected to whitelist at your edge. Our setup hadn't done that.
+
+With that context, the picture sharpened. We couldn't prove from logs alone whether the specific December 19 webhook had come from the provider or from somewhere else — we didn't have source IPs logged, which was part of the same broader observability problem. But we could see the endpoint was wide open, and we could see the gacha service had no concept of "this purchase is too old to be eligible." Two separate gaps, either one of which could have caused the incident on its own.
+
+## The fixes
+
+Once the picture was clear, two problems needed to be addressed in two different places.
+
+**At the webhook endpoint — whitelist the provider's IP ranges.** This was the baseline the endpoint should have had from the start. It's the minimum auth layer for an endpoint that takes state-changing actions, and it's what the provider's own documentation expects. We also noted longer-term hardening worth pursuing: signature verification as defense-in-depth (even though the provider doesn't require it), idempotency keys to prevent replay, and amount verification against the stored purchase. IP filtering plugs the obvious hole; the others make the endpoint meaningfully robust.
+
+**In the gacha-creation service — add temporal validation.** Even if a webhook arrives legitimately, a purchase made before the gacha feature existed should never be eligible for a gacha reward. The service had been checking whether the _gacha item_ was active and in stock. It had never been checking whether the _purchase_ was recent enough to qualify. That check needed to exist regardless of how the webhook got authenticated.
+
+In the days that followed, more cases surfaced with the same pattern. The broader RCA concluded the webhook endpoint was being actively exploited — the missing authentication wasn't just theoretical exposure, it was being used. The fixes above were the right fixes, but the scale of what we'd been exposed to was larger than that single purchase.
+
+## The painful part wasn't the bug
+
+The bug is embarrassing but fixable. What stayed with me was the day I'd spent getting to it.
+
+Here's the question I'd been trying to answer: **"Show me every action that touched this purchase, in order."**
+
+Our logs couldn't answer that directly. They could answer it indirectly, after a half-day of filtering and codebase archaeology, but the answer was _reconstructed_, not retrieved.
+
+Once the incident was closed, I couldn't stop thinking about that. Not about the bug — about the investigation. The feeling of copying log strings into grep, reading controllers to decode what each line meant, building the timeline in my head because Grafana couldn't show it to me. I wanted to understand how teams with better observability actually trace things. So I started reading.
+
+Most of what I found confirmed that my pain wasn't unusual — it was a symptom of a particular kind of logging setup that doesn't scale with system complexity.
+
+A few ideas kept coming up:
+
+**Structured logs instead of plain strings.** Instead of emitting lines like `"Webhook received for purchase 147640"`, mature systems emit JSON with named fields: `event`, `service`, `resource_id`, `actor`, `timestamp`. You filter by field, not by grepping substrings. Every article I read kept returning to this as the foundation.
+
+**Trace IDs and request IDs to connect events across services.** This was the biggest "oh, of course" moment for me. The reason my investigation hurt was that each log line was an isolated island. There was no ID connecting them. In a system with request IDs, every log line emitted during the handling of one webhook would share the same ID, and I could pull the entire sequence with a single filter. That's the difference between "reconstruct the timeline by hand" and "retrieve the timeline with one query."
+
+**Context grouping — service, domain, event type — as structured properties.** Even before you get into distributed tracing, just having consistent fields like `service: "payment"`, `domain: "gacha"`, `event: "voucher_created"` on every log line makes it possible to ask "show me everything the payment service did to this purchase" without guessing at keywords. This felt like the closest thing to what I'd actually wanted during the investigation.
+
+And then, reading further, I found a distinction I hadn't known existed — the idea that **application logs and audit/event logs serve different purposes**. Application logs track system behavior: latency, errors, health, exceptions. They're for debugging infrastructure. Audit or event logs track domain actions: who did what to which resource and when. They're for tracing flows across services and answering business questions.
+
+I'd been using application logs to ask a business question, which is why it had hurt. The article that made this click for me used an analogy I liked: application logs are motion sensors that tell you a door opened; audit logs are the camera footage that shows who opened it and when. Both are useful, but only the second one answers the investigation-shaped question I'd been asking.
+
+None of this was news to the broader industry. It was news to me.
+
+## What I built after
+
+Reading about these ideas was one thing. I wanted to feel the shape of them — to build a small thing and make each decision deliberately, so the patterns moved from "something I read about" to "something I understand." So I built a small [Event Log Service](https://labs.nrizky.com/event-log?ref=nr) in my labs.
+
+The core idea is simple. Any service can write a structured event — service name, event type, actor, resource, timestamp, optional metadata — to a single centralized store. You can later query "show me everything that touched this resource" with one filter, no grep required. The playground on the page sends live requests to the real service, so the shape is visible end-to-end.
+
+A few design decisions came directly out of what I'd read, and each one maps to a specific pain I'd felt during the investigation.
+
+**ULIDs instead of UUIDv4 for event IDs.** This was the one I found most surprising. UUIDv4 is random — you need a separate timestamp column and index to order events. ULIDs are _also_ unique, but they embed a millisecond-precision timestamp in the first half of the ID, and they sort lexicographically by time. That means the ID itself becomes the sort key: the newest events sort naturally, cursor pagination becomes a simple string comparison, and you get time-ordering for free. Same uniqueness guarantee as UUIDv4, plus ordering. It felt like a small detail until I tried paginating through events without it.
+
+**Cursor pagination instead of offset.** `OFFSET 10000` still scans 10,000 rows before returning results. As an event log grows, offset pagination degrades the deeper you page. Cursor pagination uses the ULID ordering to pick up exactly where the previous page ended, with constant performance regardless of depth. For a table that only grows, this matters.
+
+**Separating `eventTimestamp` from `createdAt`.** `eventTimestamp` is when the event actually happened (client-provided). `createdAt` is when the service recorded it (server-generated). In distributed systems, events arrive late all the time — a service buffers, retries after a failure, or sits behind a queue. Without separating these, you lose the real timeline.
+
+A few other choices — SHA-256 hashing for API keys at rest, Zod validation at the HTTP boundary rather than inside the service layer, and a service-match check that prevents one service from writing events claiming to be another — are documented on the [labs page](https://labs.nrizky.com/event-log?ref=nr) itself. None of these patterns are novel. What's new, to me, is having built something where I had to make each call deliberately. That's different from reading about them.
+
+## Closing
+
+This service isn't production-ready, and I know it. A real event-logging system would have retention policies, proper multi-tenancy, probably a queue in front of writes to absorb bursts, schema versioning, and tamper-evident storage for audit-compliance cases. Mine has none of that. It's a learning project that lets me feel the shape of the real thing.
+
+But the project does what I needed it to do: it turned an abstract realization — "I've been asking the wrong kind of log the wrong kind of question" — into something concrete. Before December 19, I didn't know what I didn't know about observability. Now I have a specific question I couldn't answer easily, a clear reason my tools couldn't answer it, and a small working thing that maps the gap between where I am and where production systems actually live. That's the shift I'm chasing — from "the system works" to "I understand why, and I can tell you what it doesn't do."
