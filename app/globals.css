@@ -121,8 +121,23 @@ body {
   font-family: "SF Mono", Monaco, Consolas, monospace;
 }
 
-/* rehype-pretty-code styles */
-.prose-custom [data-rehype-pretty-code-figure] {
+/* rehype-pretty-code: inline code (figure without pre) */
+.prose-custom [data-rehype-pretty-code-figure]:not(:has(pre)) {
+  display: inline;
+  margin: 0;
+}
+
+.prose-custom [data-rehype-pretty-code-figure]:not(:has(pre)) > code {
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 15px;
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  display: inline;
+}
+
+/* rehype-pretty-code: block code */
+.prose-custom [data-rehype-pretty-code-figure]:has(pre) {
   margin-bottom: 24px;
 }
 
@@ -134,7 +149,7 @@ body {
   overflow-x: auto;
 }
 
-.prose-custom [data-rehype-pretty-code-figure] code {
+.prose-custom [data-rehype-pretty-code-figure] pre code {
   display: grid;
   background-color: transparent;
   padding: 0;
@@ -144,16 +159,16 @@ body {
   counter-reset: line;
 }
 
-.prose-custom [data-rehype-pretty-code-figure] code > [data-line] {
+.prose-custom [data-rehype-pretty-code-figure] pre code > [data-line] {
   padding: 0 24px;
   border-left: 2px solid transparent;
 }
 
-.prose-custom [data-rehype-pretty-code-figure] code > [data-line]:first-child {
+.prose-custom [data-rehype-pretty-code-figure] pre code > [data-line]:first-child {
   padding-top: 20px;
 }
 
-.prose-custom [data-rehype-pretty-code-figure] code > [data-line]:last-child {
+.prose-custom [data-rehype-pretty-code-figure] pre code > [data-line]:last-child {
   padding-bottom: 20px;
 }
 
