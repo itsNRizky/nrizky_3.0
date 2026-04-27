@@ -1,5 +1,6 @@
 import { Noto_Sans_Javanese } from "next/font/google";
 import NavLinks from "./NavLinks";
+import TrackedExternalLink from "@/components/TrackedExternalLink";
 
 const javanese = Noto_Sans_Javanese({
   variable: "--font-javanese",
@@ -40,30 +41,33 @@ const Sidebar = () => {
       <div>
         {/* Social Links */}
         <div className="mb-4 flex gap-4">
-          <a
+          <TrackedExternalLink
             href="https://github.com/itsNRizky"
             target="_blank"
             rel="noopener noreferrer"
+            linkLabel="GitHub"
             className="text-text-faded hover:text-accent text-[13px] transition-colors duration-200"
           >
             GitHub
-          </a>
-          <a
+          </TrackedExternalLink>
+          <TrackedExternalLink
             href="https://linkedin.com/in/nrizky"
             target="_blank"
             rel="noopener noreferrer"
+            linkLabel="LinkedIn"
             className="text-text-faded hover:text-accent text-[13px] transition-colors duration-200"
           >
             LinkedIn
-          </a>
-          <a
+          </TrackedExternalLink>
+          <TrackedExternalLink
             href="https://twitter.com/nrizky"
             target="_blank"
             rel="noopener noreferrer"
+            linkLabel="Twitter"
             className="text-text-faded hover:text-accent text-[13px] transition-colors duration-200"
           >
             Twitter
-          </a>
+          </TrackedExternalLink>
         </div>
         <div className="text-text-ghost text-[12px]">© 2025 NRizky</div>
       </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getViewCount, recordView } from "@/lib/views";
 import { hashIP } from "@/lib/hash";
+import { logEvent } from "@/lib/eventLog";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -36,6 +37,28 @@ export async function POST(request: NextRequest) {
       userAgent,
       ipHash,
     });
+
+    const isArticle = typeof path === "string" && path.startsWith("/writings/");
+    const eventType = isArticle ? "article.viewed" : "page.viewed";
+    const resource = isArticle
+      ? { type: "article", id: path.replace(/^\/writings\//, "") }
+      : { type: "page", id: path };
+    const actor = ipHash ? { type: "anonymous", id: ipHash } : undefined;
+    const metadata: Record<string, unknown> = { path };
+    if (ref) metadata.ref = ref;
+    if (referrerUrl) metadata.referrer = referrerUrl;
+    if (userAgent) metadata.userAgent = userAgent;
+
+    void logEvent({ eventType, actor, resource, metadata });
+
+    if (ref) {
+      void logEvent({
+        eventType: "referral.landed",
+        actor,
+        resource,
+        metadata: { ref, path, referrer: referrerUrl ?? undefined },
+      });
+    }
 
     return NextResponse.json({ count });
   } catch {
