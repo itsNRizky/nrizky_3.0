@@ -1,4 +1,4 @@
-const SERVICE_NAME = "portfolio";
+const SERVICE_NAME = "nrizky-service";
 
 type ActorOrResource = { type: string; id: string };
 
