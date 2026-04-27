@@ -5,6 +5,7 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import { getArticle, getAllSlugs } from "@/lib/articles";
 import { rehypePrettyCode, rehypePrettyCodeOptions, remarkGfm } from "@/lib/mdx";
 import ViewCounter from "@/components/writings/ViewCounter";
+import ArticleReadTracker from "@/components/writings/ArticleReadTracker";
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
@@ -95,6 +96,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <article className="py-6 md:py-12">
+      <ArticleReadTracker slug={slug} />
       {/* Back Link */}
       <Link
         href="/writings"
